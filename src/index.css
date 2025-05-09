@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: 79 70 229;
+    --color-primary-light: 224 231 255;
+    --color-secondary: 124 58 237;
+    --color-accent: 16 185 129;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    @apply antialiased;
+  }
+
+  .dark {
+    --color-primary: 99 102 241;
+    --color-primary-light: 55 48 163;
+    --color-secondary: 139 92 246;
+    --color-accent: 20 184 166;
+  }
+}
+
+@layer components {
+  .card-transition {
+    @apply transition-all duration-300 hover:shadow-md hover:translate-y-[-2px];
+  }
+}
+
+@layer utilities {
+  .glass-effect {
+    @apply backdrop-blur-md bg-white/80 dark:bg-gray-800/80;
+  }
+}
