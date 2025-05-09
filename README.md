@@ -1,7 +1,3 @@
-# Tauri + React + Typescript
+# Simple Ark Wallet
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
-
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+<img width="791" alt="Screenshot 2025-05-09 at 2 45 49 PM" src="https://github.com/user-attachments/assets/0b031f08-6c4c-493f-bf93-3189d2703d78" />
