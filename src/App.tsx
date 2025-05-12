@@ -9,13 +9,10 @@ import Settings from "./pages/Settings";
 import { WalletProvider } from "./context/WalletContext";
 import {
   exists,
-  writeTextFile,
   readTextFile,
   BaseDirectory,
-  mkdir
 } from "@tauri-apps/plugin-fs";
-import { open } from "@tauri-apps/plugin-dialog";
-import { invoke } from "@tauri-apps/api/core";
+import Setup from "./pages/Setup";
 
 function App() {
   const [activePage, setActivePage] = useState<
@@ -46,55 +43,45 @@ function App() {
     }
   };
 
-  async function initializeApp() {
+  let [configExists, setConfigExists] = useState<boolean | undefined>();
+
+  async function checkIfConfigExists() {
     const filePath = "bark_config.txt";
 
+    console.log(BaseDirectory.AppData);
     // Check if file exists first
     const configExists = await exists(filePath, {
       baseDir: BaseDirectory.AppData,
     });
 
     let barkPath: string;
-
+    debugger;
     if (configExists) {
       barkPath = await readTextFile(filePath, {
         baseDir: BaseDirectory.AppData,
       });
-    } else {
-      // Ask user to pick a directory
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const selected = await open({ directory: true });
-
-      if (typeof selected === "string") {
-        barkPath = selected;
-
-        // Ensure AppData directory exists (Tauri handles the base directory itself, so you only need to ensure the file-level path is safe)
-        await mkdir('', {
-          baseDir: BaseDirectory.AppData,
-          recursive: true
-        });
-
-        await writeTextFile(filePath, barkPath, {
-          baseDir: BaseDirectory.AppData,
-        });
-      } else {
-        throw new Error("User did not select a directory.");
-      }
+      console.log("BARK PATH:" + barkPath);
+      setConfigExists(true);
+      return;
     }
 
-    invoke("set_path", {
-      path: BaseDirectory.AppData
-    })
+    setConfigExists(false);
   }
 
   useEffect(() => {
-    initializeApp();
+    checkIfConfigExists();
   }, []);
 
   return (
-    <WalletProvider>
-      <Layout setActivePage={setActivePage}>{renderPage()}</Layout>
-    </WalletProvider>
+    (configExists === undefined && <></>) ||
+    (configExists === false && (
+      <Setup onContinue={() => setConfigExists(true)} />
+    )) ||
+    (configExists && (
+      <WalletProvider>
+        <Layout setActivePage={setActivePage}>{renderPage()}</Layout>
+      </WalletProvider>
+    ))
   );
 }
 

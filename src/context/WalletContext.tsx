@@ -65,10 +65,25 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
 
     setWallets(
       wallets.map((wallet) =>
-        wallet.id === activeWallet.id ? { ...wallet, balance: b.offchain_sat } : wallet
+        wallet.id === activeWallet.id
+          ? { ...wallet, balance: b.offchain_sat }
+          : wallet
       )
     );
   }
+
+  useEffect(() => {
+    async () => {
+      let vtxoPubkey: string = await invoke("vtxo_pubkey");
+      setWallets(
+        wallets.map((wallet) =>
+          wallet.id === activeWallet.id
+            ? { ...wallet, address: vtxoPubkey }
+            : wallet
+        )
+      );
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -99,7 +114,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
   const sendTransaction = async (address: string, amount: number) => {
     if (!activeWallet) return;
 
-    let vtxoResponse: string = await invoke("send_money", {
+    await invoke("send_money", {
       pubkey: address,
       amount,
     });
@@ -179,7 +194,6 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
     setIsSeedPhraseVisible(!isSeedPhraseVisible);
   };
 
-
   function blockDeltaToDate(blocksFromNow: number): Date {
     const minutesPerBlock = 10;
     const totalMinutes = blocksFromNow * minutesPerBlock;
@@ -188,17 +202,19 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
   }
 
   async function getBlockHeight() {
-    let blockHeightResponse = await fetch("http://localhost:3000/blocks/tip/height");
+    let blockHeightResponse = await fetch(
+      "http://localhost:3000/blocks/tip/height"
+    );
     return blockHeightResponse.json();
-  }  
+  }
 
-  async function getSoonestExpiry(): Promise<{date: Date, height: number}> {
-    let serializedVtxos: string = await invoke("get_vtxos")
+  async function getSoonestExpiry(): Promise<{ date: Date; height: number }> {
+    let serializedVtxos: string = await invoke("get_vtxos");
     let vtxos: Vtxo[] = JSON.parse(serializedVtxos);
 
     let smallestExpiryHeight = Number.MAX_SAFE_INTEGER;
-    for(let vtxo of vtxos) {
-      if(vtxo.expiry_height < smallestExpiryHeight) {
+    for (let vtxo of vtxos) {
+      if (vtxo.expiry_height < smallestExpiryHeight) {
         smallestExpiryHeight = vtxo.expiry_height;
       }
     }
@@ -206,8 +222,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
     let blockHeight = await getBlockHeight();
     return {
       date: blockDeltaToDate(smallestExpiryHeight - blockHeight),
-      height: blockHeight
-    }
+      height: smallestExpiryHeight,
+    };
   }
 
   return (
@@ -225,7 +241,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
         sendTransaction,
         toggleSeedPhraseVisibility,
         refreshWallet,
-        getSoonestExpiry
+        getSoonestExpiry,
       }}
     >
       {children}

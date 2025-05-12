@@ -10,18 +10,19 @@ interface BalanceCardProps {
 
 const BalanceCard: React.FC<BalanceCardProps> = ({ onSend, onReceive }) => {
   const { activeWallet, refreshWallet, getSoonestExpiry } = useWallet();
-  const btcToUsd = 65000;
-  const usdBalance = activeWallet.balance * btcToUsd;
+  const btcToUsd = 103314;
+  const usdBalance = activeWallet.balance * btcToUsd / 100_000_000;
   let [daysUntilExpiry, setDaysUntilExpiry] = useState(0);
+  let [expiryInfo, setExpiryInfo] = useState<any>();
 
   useEffect(() => {
     (async () => {
       let expiryInformation = await getSoonestExpiry();
-      let d = Math.ceil((new expiryInformation.date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      let d = Math.ceil((expiryInformation.date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
       setDaysUntilExpiry(d);
-
+      setExpiryInfo(expiryInformation);
     })()
-  })
+  }, [])
 
 
   const refreshFee = 0.0001;
@@ -40,7 +41,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ onSend, onReceive }) => {
       
       <div className="mt-4 mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
         <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-1">
-          Expires in {daysUntilExpiry} days at block {activeWallet.expiryBlock}
+          Expires in {daysUntilExpiry} days at block {expiryInfo?.height}
         </p>
         <button 
           onClick={refreshWallet}

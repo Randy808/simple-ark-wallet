@@ -4,7 +4,7 @@ export const mockWallets: Wallet[] = [
   {
     id: '1',
     name: 'Main Wallet',
-    address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
+    address: '039108273eb50622f0751c1a792b3a25d9a00ddbd1bc3b963e67bf940fb489127f',
     balance: 1.245,
     isActive: true,
     expiryBlock: 840000,
