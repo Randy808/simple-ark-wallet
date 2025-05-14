@@ -11,7 +11,7 @@ interface BalanceCardProps {
 const BalanceCard: React.FC<BalanceCardProps> = ({ onSend, onReceive }) => {
   const { activeWallet, refreshWallet, getSoonestExpiry } = useWallet();
   const btcToUsd = 103314;
-  const usdBalance = activeWallet.balance * btcToUsd / 100_000_000;
+  const usdBalance = (activeWallet?.balance || 0) * btcToUsd / 100_000_000;
   let [daysUntilExpiry, setDaysUntilExpiry] = useState(0);
   let [expiryInfo, setExpiryInfo] = useState<any>();
 
@@ -35,7 +35,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ onSend, onReceive }) => {
           ${usdBalance.toLocaleString('en-US', { maximumFractionDigits: 2 })}
         </h1>
         <p className="text-lg text-gray-500 dark:text-gray-400 mt-2">
-          {Math.ceil(activeWallet.balance)} sats
+          {Math.ceil((activeWallet?.balance || 1))} sats
         </p>
       </div>
       

@@ -6,13 +6,10 @@ import Receive from "./pages/Receive";
 import Transactions from "./pages/Transactions";
 import SeedPhrase from "./pages/SeedPhrase";
 import Settings from "./pages/Settings";
-import { WalletProvider } from "./context/WalletContext";
-import {
-  exists,
-  readTextFile,
-  BaseDirectory,
-} from "@tauri-apps/plugin-fs";
+import { useWallet, WalletProvider } from "./context/WalletContext";
+import { exists, readTextFile, BaseDirectory } from "@tauri-apps/plugin-fs";
 import Setup from "./pages/Setup";
+import CreateWallet from "./pages/CreateWallet";
 
 function App() {
   const [activePage, setActivePage] = useState<
@@ -22,6 +19,7 @@ function App() {
     | "transactions"
     | "seed-phrase"
     | "settings"
+    | "create-wallet"
   >("dashboard");
 
   const renderPage = () => {
@@ -38,6 +36,8 @@ function App() {
         return <SeedPhrase />;
       case "settings":
         return <Settings />;
+      case "create-wallet":
+        return <CreateWallet />;
       default:
         return <Dashboard onNavigate={setActivePage} />;
     }
@@ -55,7 +55,6 @@ function App() {
     });
 
     let barkPath: string;
-    debugger;
     if (configExists) {
       barkPath = await readTextFile(filePath, {
         baseDir: BaseDirectory.AppData,
@@ -79,7 +78,7 @@ function App() {
     )) ||
     (configExists && (
       <WalletProvider>
-        <Layout setActivePage={setActivePage}>{renderPage()}</Layout>
+        <Layout activePage={activePage} setActivePage={setActivePage}>{renderPage()}</Layout>
       </WalletProvider>
     ))
   );

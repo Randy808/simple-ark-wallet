@@ -1,11 +1,11 @@
 export interface Wallet {
   id: string;
   name: string;
-  address: string;
+  address?: string;
   balance: number;
   isActive: boolean;
-  expiryBlock: number;
-  expiryDate: string;
+  expiryBlock?: number;
+  expiryDate?: string;
 }
 
 export interface Transaction {
@@ -21,4 +21,12 @@ export interface Transaction {
 
 export interface User {
   seedPhrase: string[];
+}
+
+export interface Network {
+  id: string;
+  name: string;
+  symbol: string;
+  isTestnet: boolean;
+  color: string;
 }

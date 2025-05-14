@@ -7,7 +7,7 @@ const TransactionsList: React.FC = () => {
   const { transactions, activeWallet } = useWallet();
   
   const filteredTransactions = transactions
-    .filter(tx => tx.walletId === activeWallet.id)
+    .filter(tx => tx.walletId === (activeWallet?.id || 0))
     .slice(0, 10);
   
   return (

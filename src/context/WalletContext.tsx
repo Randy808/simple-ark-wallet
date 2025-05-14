@@ -5,9 +5,10 @@ import React, {
   ReactNode,
   useEffect,
 } from "react";
-import { Wallet, Transaction, User } from "../types";
+import { Wallet, Transaction, User, Network } from "../types";
 import { mockWallets, mockTransactions, mockUser } from "../data/mockData";
 import { invoke } from "@tauri-apps/api/core";
+import { readDir, BaseDirectory, DirEntry } from "@tauri-apps/plugin-fs";
 
 interface WalletContextType {
   wallets: Wallet[];
@@ -17,12 +18,19 @@ interface WalletContextType {
   isSeedPhraseVisible: boolean;
   setWallets: React.Dispatch<React.SetStateAction<Wallet[]>>;
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
-  setActiveWallet: (walletId: string) => void;
+  setActiveWallet: (walletId: string) => Promise<void>;
   addWallet: (wallet: Omit<Wallet, "id" | "isActive">) => void;
   sendTransaction: (address: string, amount: number) => void;
   toggleSeedPhraseVisibility: () => void;
   refreshWallet: () => void;
   getSoonestExpiry: () => any;
+  networks: Network[];
+  createWallet: (
+    name: string,
+    network: string,
+    asp_url: string,
+    esplora_url: string
+  ) => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -48,56 +56,124 @@ type BarkBalance = {
   pending_exit_sat: number;
 };
 
+export const mockNetworks: Network[] = [
+  {
+    id: "bitcoin-mainnet",
+    name: "Bitcoin",
+    symbol: "BTC",
+    isTestnet: false,
+    color: "#F7931A",
+  },
+  {
+    id: "bitcoin-testnet",
+    name: "Bitcoin Testnet",
+    symbol: "tBTC",
+    isTestnet: true,
+    color: "#FFB80F",
+  },
+  {
+    id: "signet",
+    name: "Signet",
+    symbol: "tBTC",
+    isTestnet: true,
+    color: "green",
+  },
+];
+
 export const WalletProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [wallets, setWallets] = useState<Wallet[]>(mockWallets);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
   const [transactions, setTransactions] =
     useState<Transaction[]>(mockTransactions);
   const [user, setUser] = useState<User>(mockUser);
   const [isSeedPhraseVisible, setIsSeedPhraseVisible] = useState(false);
+  const [networks] = useState<Network[]>(mockNetworks);
 
   const activeWallet = wallets.find((wallet) => wallet.isActive) || wallets[0];
+
+  async function initWallets() {
+    const entries: DirEntry[] = await readDir("wallets", {
+      baseDir: BaseDirectory.AppLocalData,
+    });
+
+    let wallets = entries
+      .filter((e) => e.isDirectory)
+      .map((e, index) => {
+        return {
+          id: "" + index,
+          name: e.name,
+          balance: 0,
+          isActive: false,
+        };
+      });
+
+    setWallets(wallets);
+  }
 
   async function updateBalance() {
     let fetched_balance: string = await invoke("get_balance");
     let b: BarkBalance = JSON.parse(fetched_balance);
 
-    setWallets(
-      wallets.map((wallet) =>
-        wallet.id === activeWallet.id
+    function setBalanceOfActiveWallet(currentWallets: Wallet[]) {
+      return currentWallets.map((wallet) =>
+        wallet.id === activeWallet?.id
           ? { ...wallet, balance: b.offchain_sat }
           : wallet
-      )
-    );
+      );
+    }
+
+    setWallets(setBalanceOfActiveWallet);
+  }
+
+  async function initAddresses() {
+    let vtxoPubkey: string = await invoke("vtxo_pubkey");
+
+    function setActiveWalletAddress(wallets: Wallet[]) {
+      return wallets.map((wallet) =>
+        wallet.isActive
+          ? { ...wallet, address: vtxoPubkey }
+          : wallet
+      );
+    }
+
+    setWallets(setActiveWalletAddress);
   }
 
   useEffect(() => {
-    async () => {
-      let vtxoPubkey: string = await invoke("vtxo_pubkey");
-      setWallets(
-        wallets.map((wallet) =>
-          wallet.id === activeWallet.id
-            ? { ...wallet, address: vtxoPubkey }
-            : wallet
-        )
-      );
-    };
-  }, []);
-
-  useEffect(() => {
     (async () => {
-      await updateBalance();
+      await initWallets();
+
+      // await initAddresses();
     })();
   }, []);
 
-  const setActiveWallet = (walletId: string) => {
+  useEffect(() => {
+    updateBalance();
+  }, [activeWallet]);
+
+  const setActiveWallet = async (walletId: string) => {
+    let wallet = wallets.filter((wallet) => wallet.id === walletId)?.[0];
+
+    if (!wallet) {
+      console.log("no wallet found");
+      return;
+    }
+
+    console.log("wallet found");
+
     setWallets(
       wallets.map((wallet) => ({
         ...wallet,
         isActive: wallet.id === walletId,
       }))
     );
+
+    await invoke("set_wallet", {
+      walletName: wallet.name,
+    });
+    
+    await initAddresses();
   };
 
   const addWallet = (wallet: Omit<Wallet, "id" | "isActive">) => {
@@ -156,9 +232,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
     if (!activeWallet) return;
 
     const fee = 0.0001;
-    const newExpiryBlock = activeWallet.expiryBlock + 2016; // Approximately 2 weeks worth of blocks
+    //const newExpiryBlock = activeWallet.expiryBlock + 2016; // Approximately 2 weeks worth of blocks
+    const newExpiryBlock = 200 + 2016; // Approximately 2 weeks worth of blocks
+
+    //new Date(activeWallet.expiryDate).getTime() + 14 * 24 * 60 * 60 * 1000
     const newExpiryDate = new Date(
-      new Date(activeWallet.expiryDate).getTime() + 14 * 24 * 60 * 60 * 1000
+      new Date().getTime() + 14 * 24 * 60 * 60 * 1000
     )
       .toISOString()
       .split("T")[0];
@@ -226,6 +305,20 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
     };
   }
 
+  async function createWallet(
+    name: string,
+    network: string,
+    aspUrl: string,
+    esploraUrl: string
+  ) {
+    await invoke("create_wallet", {
+      name,
+      network,
+      aspUrl,
+      esploraUrl,
+    });
+  }
+
   return (
     <WalletContext.Provider
       value={{
@@ -242,6 +335,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
         toggleSeedPhraseVisibility,
         refreshWallet,
         getSoonestExpiry,
+        networks,
+        createWallet,
       }}
     >
       {children}

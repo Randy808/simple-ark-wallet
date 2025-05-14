@@ -4,9 +4,10 @@ import { useWallet } from '../../context/WalletContext';
 
 interface SidebarProps {
   onItemClick?: () => void;
+  setActivePage?: (page: any) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onItemClick }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onItemClick, setActivePage }) => {
   const { wallets, setActiveWallet, activeWallet } = useWallet();
 
   const handleWalletClick = (walletId: string) => {
@@ -23,7 +24,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onItemClick }) => {
             className="p-1 text-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             aria-label="Add wallet"
           >
-            <Plus size={16} />
+            <Plus size={16} onClick={() => {
+              setActivePage?.("create-wallet");
+              if (onItemClick) onItemClick();
+            }}/>
           </button>
         </div>
         
